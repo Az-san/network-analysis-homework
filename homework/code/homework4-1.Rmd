@@ -1,0 +1,88 @@
+---
+title: "Generating Scale-Free Networks"
+output: html_notebook
+---
+
+## Required Libraries
+```{r}
+library(igraph)
+library(ggplot2)
+```
+
+## R Markdown
+```{r}
+generate_scale_free <- function(N, gamma) {
+  # Using the Barabási–Albert model to generate scale-free networks
+  g <- sample_pa(N, power = gamma - 1, m = 1, directed = FALSE)
+  
+  # Convert the graph to an edge list
+  edge_list <- as_data_frame(g, what = "edges")
+  
+  # Detect multi-links (duplicated edges)
+  edge_list_sorted <- t(apply(edge_list, 1, sort))
+  multi_links <- sum(duplicated(edge_list_sorted))
+  perc_multi_links <- (multi_links / nrow(edge_list)) * 100
+  
+  # Detect self-loops
+  self_loops <- sum(edge_list$from == edge_list$to)
+  perc_self_loops <- (self_loops / nrow(edge_list)) * 100
+  
+  return(list(graph = g, perc_multi_links = perc_multi_links, perc_self_loops = perc_self_loops))
+}
+```
+
+## Including Plots
+```{r}
+set.seed(123)
+N_values <- c(10^3, 10^4, 10^5)
+gamma <- 2.2
+
+results_2.2 <- lapply(N_values, function(N) generate_scale_free(N, gamma))
+
+# Extracting percentages for γ = 2.2
+percentages_2.2 <- data.frame(
+  N = N_values,
+  MultiLinks = sapply(results_2.2, function(x) x$perc_multi_links),
+  SelfLoops = sapply(results_2.2, function(x) x$perc_self_loops)
+)
+percentages_2.2
+```
+
+
+## Including Plots
+```{r}
+set.seed(123)
+gamma <- 3
+
+results_3.0 <- lapply(N_values, function(N) generate_scale_free(N, gamma))
+
+# Extracting percentages for γ = 3
+percentages_3.0 <- data.frame(
+  N = N_values,
+  MultiLinks = sapply(results_3.0, function(x) x$perc_multi_links),
+  SelfLoops = sapply(results_3.0, function(x) x$perc_self_loops)
+)
+percentages_3.0
+```
+
+
+## Including Plots
+```{r}
+percentages_all <- rbind(
+  data.frame(percentages_2.2, Gamma = "2.2"),
+  data.frame(percentages_3.0, Gamma = "3.0")
+)
+
+ggplot(percentages_all, aes(x = log10(N), y = MultiLinks, color = Gamma)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Percentage of Multi-Links", x = "Log10(N)", y = "Percentage") +
+  theme_minimal()
+
+ggplot(percentages_all, aes(x = log10(N), y = SelfLoops, color = Gamma)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Percentage of Self-Loops", x = "Log10(N)", y = "Percentage") +
+  theme_minimal()
+```
+
